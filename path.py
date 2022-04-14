@@ -541,6 +541,7 @@ class gvf:
         self.errorMap = errorMap
         self.lastS = None
         self.finished = False
+        self.canFinish = True
 
     def update(self, pose: Pose):
         if self.lastS == None:
@@ -567,7 +568,7 @@ class gvf:
         forwardOutput = None
         if self.kF == None: forwardOutput = 1.0
         else: forwardOutput = endDisplacement / self.kF
-        self.finished = self.finished or endDisplacement < self.epsilon
+        self.finished = self.finished or (self.canFinish and endDisplacement < self.epsilon)
         translationalPower = vectorFieldResult
         if self.finished: translationalPower = (projected.minus(pose.vec))
         translationalPower = translationalPower.times(forwardOutput)
