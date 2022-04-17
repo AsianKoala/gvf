@@ -2,7 +2,7 @@
 from math import atan2, sqrt, pi
 import numpy as np
 
-def epsilonEquals(this, other): return abs(this - other) < 0.0000001
+def epsilonEquals(this, other, epsilon=0.0000001): return abs(this - other) < epsilon
 def angleNorm(angle):
     a = angle
     tau = 2 * pi
@@ -12,12 +12,12 @@ def angleNorm(angle):
 
 class Vector:
     def __init__(self, x=0.0, y=0.0):
-        if type(x) != float: 
-            print('bad type:', type(x))
-            raise Exception()
-        if type(y) != float: raise Exception()
-        self.x = x
-        self.y = y
+        # if type(x) != float: 
+        #     print('bad type:', type(x))
+        #     raise Exception()
+        # if type(y) != float: raise Exception()
+        self.x = float(x)
+        self.y = float(y)
 
     @classmethod
     def polar(cls, r, theta): return Vector(float(r * np.cos(theta)), float(r * np.sin(theta)))
@@ -54,18 +54,17 @@ class Vector:
 
     def plus(self, other): return Vector(self.x + other.x, self.y + other.y)
     
-    def unaryMinus(self): return Vector(-self.x, -self.y)
+    def neg(self): return Vector(-self.x, -self.y)
 
-    def minus(self, other): return self.plus(other.unaryMinus())
+    def minus(self, other): return self.plus(other.neg())
 
     def __str__(self): return "{}, {}".format(self.x, self.y)
 
 class Pose:
     def __init__(self, v=Vector(), heading=0):
-        self.x = v.x
-        self.y = v.y
-        self.heading = heading
-        if type(heading) != float: raise Exception()
+        self.x = float(v.x)
+        self.y = float(v.y)
+        self.heading = float(heading)
         self.vec = v
 
     def times(self, s): return Pose(self.vec.times(s), self.heading * s)

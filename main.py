@@ -11,15 +11,13 @@ def plotPath(path):
         v = path.get(float(s))
         xPath.append(v.x)
         yPath.append(v.y)
-    plt.plot(xPath,yPath, color='w', linewidth=3, alpha=0.5)
+    plt.plot(xPath,yPath, color='w', linewidth=3, alpha=0.8)
 
-def plotRobot(path, startPose, controller):
+def plotRobot(startPose, controller):
     dt = 1.0
     xRobotPath = []
     yRobotPath = []
     pose = startPose
-    controller.canFinish = True
-    controller.finished = False
     while not controller.finished:
         output = controller.update(pose)
         displacement: Pose = output.times(dt)
@@ -28,15 +26,13 @@ def plotRobot(path, startPose, controller):
         yRobotPath.append(pose.y)
     plt.plot(xRobotPath,yRobotPath, color='r', linewidth=3, alpha=0.9)
     
-def plotVectorField(controller):
+def plotVectorField(controller, minBounds, maxBounds):
     xRobot = []
     yRobot = []
     xHeading = []
     yHeading = []
-    xs = np.arange(0.0, 64.0, 1.5)
-    ys = np.arange(-5.0, 40.0, 1.5)
-    controller.canFinish = False
-    controller.finished = False
+    xs = np.arange(minBounds.x, maxBounds.x, 1.5)
+    ys = np.arange(minBounds.y, maxBounds.y, 1.5)
     for x in xs:
         for y in ys:
             pose = Pose(Vector(float(x), float(y)), 0.0)
@@ -47,22 +43,39 @@ def plotVectorField(controller):
             yHeading.append(output.y)
     plt.quiver(xRobot, yRobot, xHeading, yHeading, color='c', scale_units='inches', scale=7)
 
-
-
+def plotCircle(pos, radius, c_color, minBounds, maxBounds):
+    theta = np.linspace(0, 2*pi, 100)
+    cx = radius * np.cos(theta) + pos.x
+    cy = radius * np.sin(theta) + pos.y
+    cx, cy = list(cx), list(cy)
+    fit_c_x = []
+    fit_c_y = []
+    for i,x in enumerate(cx):
+        y = cy[i]
+        in_x_bounds = minBounds.x < x < maxBounds.x
+        in_y_bounds = minBounds.y < y < maxBounds.y
+        if in_x_bounds and in_y_bounds:
+            fit_c_x.append(x)
+            fit_c_y.append(y)
+    plt.plot(fit_c_x, fit_c_y, color=c_color)
+            
 def main():
-    pose = Pose(Vector(10.0, -4.0), radians(90.0))
+    pose = Pose(Vector(10.0, 2.0), radians(90.0))
     startPose = Pose(pose.vec, pose.heading)
-    path: Path = PathBuilder(Pose(Vector(), radians(90.0)), radians(90.0)).splineTo(
+    path: Path = PathBuilder(Pose(Vector(), radians(90.0)), radians(70.0)).splineTo(
         Vector(24.0, 24.0), radians(70.0)).splineTo(
-            Vector(48.0, 36.0), 0.0).splineTo(Vector(64.0, 12.0), radians(-90)).build()
+            Vector(48.0, 36.0), 0.0).splineTo(Vector(64.0, 12.0), radians(-70)).build()
 
-    controller = gvf(path, 0.2, 1.0, 5.0, 2.0)
-
+    controller = gvf(path, 0.2, 1.0, 6.0, 4.0)
+    minBounds = Vector(-5, -5)
+    maxBounds = Vector(70, 40)
     plt.style.use('dark_background')
     plt.rcParams["figure.figsize"] = (10,8)
     plotPath(path)
-    plotRobot(path, startPose, controller)
-    plotVectorField(controller)
+    plotRobot(startPose, controller)
+    plotVectorField(controller, minBounds, maxBounds)
+    plotCircle(path.end().vec, controller.kF, 'y', minBounds, maxBounds)
+    # plotCircle(path.end().vec, controller.kEnd, 'b', minBounds, maxBounds)
     plt.show()
 
 if __name__ == '__main__':
