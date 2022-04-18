@@ -586,28 +586,28 @@ class gvf:
 
         this condition is only true if our projected has gone further than the end
         in this case the vector field can no longer be accurately used
+
+        
+        ensure min translationVector norm is >= absoluteVector kEnd max norm
+        max_kend = self.kEnd / self.kF
+
+        if translationalPower.norm() != 0.0:
+            scaleRatio = abs(max_kend / translationalPower.norm())
+            translationalPower = translationalPower.div(scaleRatio)
+        
         '''
         
         projectedDisplacement = abs(s - self.path.length())
         translationalPower = vectorFieldResult.times(projectedDisplacement / self.kF)
 
-        # ensure min translationVector norm is >= absoluteVector kEnd max norm
-        # max_kend = self.kEnd / self.kF
+        # self.finished = self.finished or projectedDisplacement < self.kEnd
+        self.finished = projectedDisplacement < self.kEnd and pose.vec.dist(self.path.end().vec) < self.kEnd
 
-        # if translationalPower.norm() != 0.0:
-        #     scaleRatio = abs(max_kend / translationalPower.norm())
-        #     translationalPower = translationalPower.div(scaleRatio)
-        
-        isInEndRadius = absoluteDisplacement.norm() < self.kEnd
-        absoluteVector = absoluteDisplacement.times(absoluteDisplacement.norm() / self.kF)
-        # if isInEndRadius:
-        #     translationalPower = absoluteVector
-
-        self.finished = self.finished or (isInEndRadius and absoluteDisplacement.norm() < 1.0)
-
+        absoluteVector = absoluteDisplacement.times(projectedDisplacement / self.kF)
+        if self.finished: translationalPower = absoluteVector
         if translationalPower.norm() > 1.0: translationalPower = translationalPower.normalized()
         if self.isRobotCentric: translationalPower = translationalPower.rotate(pose.heading)
-
+        print(translationalPower.rotate(pi/2 - pose.heading))
         return Pose(translationalPower, angularOutput)
 
 

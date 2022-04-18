@@ -6,17 +6,20 @@ from geometry import *
 def plotPath(path):
     len = path.length()
     xPath, yPath = [], []
-    displacements = np.arange(0.0, len)
+    displacements = np.linspace(0.0, len, num=int(len*2))
     for s in displacements:
         v = path.get(float(s))
         xPath.append(v.x)
         yPath.append(v.y)
     plt.plot(xPath,yPath, color='w', linewidth=3, alpha=0.8)
 
-def plotRobot(startPose, controller):
+def plotRobot(startPose, controller: gvf, path: Path):
     dt = 1.0
     xRobotPath = []
     yRobotPath = []
+    xHeading = []
+    yHeading = []
+
     pose = startPose
     while not controller.finished:
         output = controller.update(pose)
@@ -24,6 +27,12 @@ def plotRobot(startPose, controller):
         pose = Pose(Vector(pose.x + displacement.x, pose.y + displacement.y), angleNorm(pose.heading + displacement.heading))
         xRobotPath.append(pose.x)
         yRobotPath.append(pose.y)
+        
+        s = controller.lastS
+        normal = path.deriv(s).vec.rotate(-pi/2)        
+
+
+
     plt.plot(xRobotPath,yRobotPath, color='r', linewidth=3, alpha=0.9)
     
 def plotVectorField(controller, minBounds, maxBounds):
@@ -66,16 +75,16 @@ def main():
         Vector(24.0, 24.0), radians(70.0)).splineTo(
             Vector(48.0, 36.0), 0.0).splineTo(Vector(64.0, 12.0), radians(-70)).build()
 
-    controller = gvf(path, 0.2, 1.0, 6.0, 4.0)
+    controller = gvf(path, 0.2, 1.0, 4.0, 0.5)
     minBounds = Vector(-5, -5)
     maxBounds = Vector(70, 40)
     plt.style.use('dark_background')
     plt.rcParams["figure.figsize"] = (10,8)
     plotPath(path)
-    plotRobot(startPose, controller)
-    plotVectorField(controller, minBounds, maxBounds)
+    plotRobot(startPose, controller, path)
+    # plotVectorField(controller, minBounds, maxBounds)
     plotCircle(path.end().vec, controller.kF, 'y', minBounds, maxBounds)
-    # plotCircle(path.end().vec, controller.kEnd, 'b', minBounds, maxBounds)
+    plotCircle(path.end().vec, controller.kEnd, 'w', minBounds, maxBounds)
     plt.show()
 
 if __name__ == '__main__':

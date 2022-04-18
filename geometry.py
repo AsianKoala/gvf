@@ -1,5 +1,5 @@
 
-from math import atan2, sqrt, pi
+from math import atan2, hypot, sqrt, pi
 import numpy as np
 
 def epsilonEquals(this, other, epsilon=0.0000001): return abs(this - other) < epsilon
@@ -12,10 +12,6 @@ def angleNorm(angle):
 
 class Vector:
     def __init__(self, x=0.0, y=0.0):
-        # if type(x) != float: 
-        #     print('bad type:', type(x))
-        #     raise Exception()
-        # if type(y) != float: raise Exception()
         self.x = float(x)
         self.y = float(y)
 
@@ -50,7 +46,7 @@ class Vector:
             float(self.x * np.sin(angle) + self.y * np.cos(angle))
         )
 
-    def dist(self, other): return ((other.x - self.x)**2 + (other.y - self.y)**2)**(0.5)
+    def dist(self, other): return hypot(self.x-other.x, self.y-other.y)
 
     def plus(self, other): return Vector(self.x + other.x, self.y + other.y)
     
