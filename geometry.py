@@ -54,7 +54,7 @@ class Vector:
 
     def minus(self, other): return self.plus(other.neg())
 
-    def __str__(self): return "{}, {}".format(self.x, self.y)
+    def __str__(self): return "{:.5g}, {:.5g}".format(self.x, self.y)
 
 class Pose:
     def __init__(self, v=Vector(), heading=0):

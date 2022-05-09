@@ -534,16 +534,20 @@ class PathBuilder:
 def linear(input): return input
 
 class gvf:
-    def __init__(self, path: Path, kN, kOmega, kF, kEnd, isRobotCentric = False, shouldCheckOutOfBounds = True, errorMap = linear):
+    def __init__(self, path: Path, kN, kOmega, kTheta, kF, kEnd, isRobotCentric = False, errorMap = linear):
         self.path = path
         self.kN = kN
         self.kOmega = kOmega
+        self.kTheta = kTheta
         self.kF = kF
         self.kEnd = kEnd
         self.isRobotCentric = isRobotCentric
         self.errorMap = errorMap
         self.lastS = None
         self.finished = False
+        self.nAvg = 0
+        self.sumAvg = 0
+        self.print = True 
 
 
     def update(self, pose: Pose):
@@ -564,51 +568,25 @@ class gvf:
 
         desiredHeading = vectorFieldResult.angle()
         headingError = angleNorm(desiredHeading - pose.heading)
-        angularOutput = self.kOmega * headingError
+        angularOutput = self.kOmega * degrees(headingError)
         absoluteDisplacement = pose.vec.minus(self.path.end().vec).neg()
-
-
-
-        '''
-        basically, start slowind down based on arc length parameter, when within kF
-        if the pose is within the circle r=kEnd of path end (finished), then use a P controller to slowly guide robot to end
-        this means we can't use any projections bc stuff get screwed up
-        VERIFY THAT WE'RE ACTUALLY FINISHED WITH PROJECTION BEFORE USING POSE DISPLACEMENT
-
-        we must check if the robot has somehow gone outside kEnd and is farther than the path end
-        if so apply a p controller    
-        find end deriv
-        rotate end and robot pose by negative end deriv angle (reorient our axis basically)
-        now that axis is reoriented, end spline is pointing upwards
-        imagine the normals of the end deriv extending as a vertical line
-        anything on the left side is within the path, anything on the right is outside
-        bcz axis have been reoriented, we can just subtract x and check sgn
-
-        this condition is only true if our projected has gone further than the end
-        in this case the vector field can no longer be accurately used
-
-        
-        ensure min translationVector norm is >= absoluteVector kEnd max norm
-        max_kend = self.kEnd / self.kF
-
-        if translationalPower.norm() != 0.0:
-            scaleRatio = abs(max_kend / translationalPower.norm())
-            translationalPower = translationalPower.div(scaleRatio)
-        
-        '''
         
         projectedDisplacement = abs(s - self.path.length())
         translationalPower = vectorFieldResult.times(projectedDisplacement / self.kF)
 
-        # self.finished = self.finished or projectedDisplacement < self.kEnd
         self.finished = projectedDisplacement < self.kEnd and pose.vec.dist(self.path.end().vec) < self.kEnd
 
         absoluteVector = absoluteDisplacement.times(projectedDisplacement / self.kF)
         if self.finished: translationalPower = absoluteVector
         if translationalPower.norm() > 1.0: translationalPower = translationalPower.normalized()
         if self.isRobotCentric: translationalPower = translationalPower.rotate(pose.heading)
-        print(translationalPower.rotate(pi/2 - pose.heading))
-        return Pose(translationalPower, angularOutput)
+
+        translationalPower = translationalPower.div(max(1,abs(headingError * self.kTheta)))
+        if print:
+            self.sumAvg += abs(degrees(headingError))
+            self.nAvg += 1
+            print('error: {:.5g} avg error: {:.5g} position: {} xy {} w {:.5g}'.format(degrees(headingError), self.sumAvg / self.nAvg, pose.vec, translationalPower, angularOutput))
+        return Pose(translationalPower, angularOutput), Pose(translationalPower.rotate(pi/2 - pose.heading), angularOutput)
 
 
 def main():
