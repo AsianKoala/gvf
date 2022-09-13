@@ -565,25 +565,34 @@ class gvf:
         return self.kOmega * degrees(headingError), headingError
 
     def vectorControl(self, pose, vectorFieldResult, headingError, angularOutput):
-        absoluteDisplacement = pose.vec.minus(self.path.end().vec).neg()
-        
-        projectedDisplacement = abs(self.lastS - self.path.length())
-        translationalPower = vectorFieldResult.times(projectedDisplacement / self.kF)
+        # absoluteDisplacement = pose.vec.minus(self.path.end().vec).neg()
+        endVec = self.path.end().vec.minus(pose.vec)
+        paramTillEnd = abs(self.lastS - self.path.length())
 
-        self.finished = projectedDisplacement < self.kEnd and pose.vec.dist(self.path.end().vec) < self.kEnd
-
-        absoluteVector = absoluteDisplacement.times(projectedDisplacement / self.kF)
-        if self.finished: translationalPower = absoluteVector
+        translationalPower = vectorFieldResult.times(paramTillEnd / self.kF)
         if translationalPower.norm() > 1.0: translationalPower = translationalPower.normalized()
-        if self.isRobotCentric: translationalPower = translationalPower.rotate(pose.heading)
-
         translationalPower = translationalPower.div(max(1,abs(headingError * self.kTheta)))
+
+        self.finished = self.finished or (paramTillEnd < self.kEnd and endVec.norm() < self.kEnd)
+        if self.finished: translationalPower = endVec.times(paramTillEnd / self.kF)
+
         if print:
             self.sumAvg += abs(degrees(headingError))
             self.nAvg += 1
             print('error: {:.5g} avg error: {:.5g} position: {} xy {} w {:.5g}'.format(degrees(headingError), self.sumAvg / self.nAvg, pose.vec, translationalPower, angularOutput))
 
         return translationalPower
+        
+        # projectedDisplacement = abs(self.lastS - self.path.length())
+        # translationalPower = vectorFieldResult.times(projectedDisplacement / self.kF)
+
+        # self.finished = projectedDisplacement < self.kEnd and pose.vec.dist(self.path.end().vec) < self.kEnd
+
+        # absoluteVector = absoluteDisplacement.times(projectedDisplacement / self.kF)
+        # if self.finished: translationalPower = absoluteVector
+        # if translationalPower.norm() > 1.0: translationalPower = translationalPower.normalized()
+        # if self.isRobotCentric: translationalPower = translationalPower.rotate(pose.heading)
+
 
 
     def update(self, pose: Pose):
@@ -608,10 +617,4 @@ def main():
     output = controller.update(pose).vec.rotate(pose.heading)
     print(output)
 
-    
-
-
-    
-
-
-
+   

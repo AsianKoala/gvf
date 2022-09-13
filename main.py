@@ -14,7 +14,7 @@ def plotPath(path):
     plt.plot(xPath,yPath, color='w', linewidth=3, alpha=0.3)
 
 def plotRobot(startPose, controller: gvf, path: Path):
-    xydt = 1.0
+    xydt = 0.7
     wdt = 1.0
     xRobotPath = []
     yRobotPath = []
@@ -88,13 +88,11 @@ def plotCircle(pos, radius, c_color, minBounds, maxBounds):
     plt.plot(fit_c_x, fit_c_y, color=c_color)
             
 def main():
-    pose = Pose(Vector(-70, -24), 0)
-    stack = Pose(Vector(-12, -70), radians(90.0))
-    rVec = stack.vec.minus(pose.vec)
-    # path: Path = PathBuilder(pose, pose.heading).splineTo(Vector(24,24), radians(90.0)).build()
-    path: Path = PathBuilder(pose, pose.heading).splineTo(rVec, stack.heading).build()
+    pose = Pose(Vector(0.0, 0.0), radians(90.0))
+    stack = Pose
+    path: Path = PathBuilder(pose, pose.heading).splineTo(Vector(24,24), radians(90.0)).build()
 
-    controller = gvf(path, kN = 0.1, kOmega = 1.0, kTheta = 50.0, kF = 4.0, kEnd = 0.4)
+    controller = gvf(path, kN = 1.0, kOmega = 1.0, kTheta = 50.0, kF = 4.0, kEnd = 0.4)
     minBounds = Vector(-5, -5)
     maxBounds = Vector(25, 25)
     plt.style.use('dark_background')
