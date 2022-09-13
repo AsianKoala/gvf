@@ -549,29 +549,25 @@ class gvf:
         self.sumAvg = 0
         self.print = True 
 
-
-    def update(self, pose: Pose):
-        if self.lastS == None:
-            self.lastS = self.path.fastProject(pose.vec, self.path.length() * 0.25)
-        else:
-            self.lastS = self.path.fastProject(pose.vec, self.lastS)
-
-        s = self.lastS
+    def gvfVecAt(self, pose: Pose, s) -> Vector:
         tangent: Vector = self.path.deriv(s).vec
         normalVec = tangent.rotate(pi / 2.0)
-
         projected: Pose = self.path.get(s).vec
         displacementVec = projected.minus(pose.vec)
         orientation = displacementVec.cross(tangent)
         error = displacementVec.norm() * sign(orientation)
-        vectorFieldResult = tangent.minus(normalVec.times(self.kN * self.errorMap(error)))
+        return tangent.minus(normalVec.times(self.kN * self.errorMap(error)))
 
+
+    def headingControl(self, pose, vectorFieldResult):
         desiredHeading = vectorFieldResult.angle()
         headingError = angleNorm(desiredHeading - pose.heading)
-        angularOutput = self.kOmega * degrees(headingError)
+        return self.kOmega * degrees(headingError), headingError
+
+    def vectorControl(self, pose, vectorFieldResult, headingError, angularOutput):
         absoluteDisplacement = pose.vec.minus(self.path.end().vec).neg()
         
-        projectedDisplacement = abs(s - self.path.length())
+        projectedDisplacement = abs(self.lastS - self.path.length())
         translationalPower = vectorFieldResult.times(projectedDisplacement / self.kF)
 
         self.finished = projectedDisplacement < self.kEnd and pose.vec.dist(self.path.end().vec) < self.kEnd
@@ -586,7 +582,21 @@ class gvf:
             self.sumAvg += abs(degrees(headingError))
             self.nAvg += 1
             print('error: {:.5g} avg error: {:.5g} position: {} xy {} w {:.5g}'.format(degrees(headingError), self.sumAvg / self.nAvg, pose.vec, translationalPower, angularOutput))
+
+        return translationalPower
+
+
+    def update(self, pose: Pose):
+        if self.lastS == None:
+            self.lastS = self.path.fastProject(pose.vec, self.path.length() * 0.25)
+        else:
+            self.lastS = self.path.fastProject(pose.vec, self.lastS)
+
+        vectorFieldResult = self.gvfVecAt(pose, self.lastS)
+        angularOutput, headingError = self.headingControl(pose, vectorFieldResult)
+        translationalPower = self.vectorControl(pose, vectorFieldResult, headingError, angularOutput)
         return Pose(translationalPower, angularOutput), Pose(translationalPower.rotate(pi/2 - pose.heading), angularOutput)
+
 
 
 def main():
