@@ -4,14 +4,19 @@ from koawalib import *
 from plothelper import *
 
 def main():
-    pose = Pose(Vector(-58, -36), 0)
-    path: Path = path_generator(pose, 
-            Pose(Vector(-54, -54), radians(330)),
-            Pose(Vector(-36, -54), radians(0)),
-            Pose(Vector(-12, -58), radians(330)))
+    init_plot()
 
-    controller = koawalib_gvf(path, kN=0.5, kOmega=1.0, kF=4.0, epsilon=0.4)
-    plot(pose, path, controller)
+    path(Pose(Vector(-70, -30), 0),
+        Pose(Vector(-56, -60), radians(330)), 
+        Pose(Vector(-12, -70), radians(330)))
+
+    path(Pose(Vector(-12, -70), radians(150)),
+        Pose(Vector(-3, -30), radians(65)))
+
+    path(Pose(Vector(-3, -30), radians(245)),
+        Pose(Vector(-12, -68), radians(270)))
+
+    finish_plot()
 
 if __name__ == '__main__':
     main()
