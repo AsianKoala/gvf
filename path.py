@@ -583,17 +583,6 @@ class gvf:
 
         return translationalPower
         
-        # projectedDisplacement = abs(self.lastS - self.path.length())
-        # translationalPower = vectorFieldResult.times(projectedDisplacement / self.kF)
-
-        # self.finished = projectedDisplacement < self.kEnd and pose.vec.dist(self.path.end().vec) < self.kEnd
-
-        # absoluteVector = absoluteDisplacement.times(projectedDisplacement / self.kF)
-        # if self.finished: translationalPower = absoluteVector
-        # if translationalPower.norm() > 1.0: translationalPower = translationalPower.normalized()
-        # if self.isRobotCentric: translationalPower = translationalPower.rotate(pose.heading)
-
-
 
     def update(self, pose: Pose):
         if self.lastS == None:

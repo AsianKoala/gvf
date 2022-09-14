@@ -2,6 +2,8 @@ from math import radians
 import numpy as np
 from path import *
 from geometry import * 
+from koawalib import *
+
 
 def plotPath(path):
     len = path.length()
@@ -13,8 +15,8 @@ def plotPath(path):
         yPath.append(v.y)
     plt.plot(xPath,yPath, color='w', linewidth=3, alpha=0.3)
 
-def plotRobot(startPose, controller: gvf, path: Path):
-    xydt = 0.7
+def plotRobot(startPose, controller: koawalib_gvf, path: Path):
+    xydt = 1.0
     wdt = 1.0
     xRobotPath = []
     yRobotPath = []
@@ -22,12 +24,15 @@ def plotRobot(startPose, controller: gvf, path: Path):
     prefHeadingY = []
     currHeadingX = []
     currHeadingY = []
+    tangentVecNorms = []
 
     pose = startPose
     sumDisplacement = 0
-    steps = 50
+    steps = 60
     lastVec = Vector()
-    while not controller.finished:
+    iters = 0
+    while not controller.isFinished:
+        iters+=1
         output = controller.update(pose)[0]
         displacement: Pose = Pose(Vector(output.x * xydt, output.y * xydt), output.heading * wdt)
         sumDisplacement += displacement.vec.norm()
@@ -35,6 +40,7 @@ def plotRobot(startPose, controller: gvf, path: Path):
         pose = Pose(Vector(pose.x + displacement.x, pose.y + displacement.y), angleNorm(pose.heading + radians(displacement.heading)))
 
         displacement = lastVec.minus(pose.vec).norm()
+        
         if displacement > path.length() / steps:
             xRobotPath.append(pose.x)
             yRobotPath.append(pose.y)
@@ -47,31 +53,23 @@ def plotRobot(startPose, controller: gvf, path: Path):
             currHeadingX.append(currHeadingVec.x)
             currHeadingY.append(currHeadingVec.y)
             lastVec = pose.vec
+            tangentVecNorms.append(output.vec.norm())
 
-    # plt.plot(xRobotPath,yRobotPath, color='r', linewidth=3, alpha=0.6)
+
+    print(iters)
+
     plt.quiver(xRobotPath, yRobotPath, prefHeadingX, prefHeadingY, color='r', scale_units='inches', scale=5)
     plt.quiver(xRobotPath, yRobotPath, currHeadingX, currHeadingY, color='c', scale_units='inches', scale=7)
 
+def plot(pose, path, controller):
+    plt.style.use('dark_background')
+    plt.rcParams["figure.figsize"] = (10,8)
+    plotPath(path)
+    plotRobot(pose, controller, path)
+    plotKnots(path)
+    plt.show()
 
-def plotVectorField(controller:gvf, minBounds, maxBounds):
-    controller.print = False
-    xRobot = []
-    yRobot = []
-    xHeading = []
-    yHeading = []
-    xs = np.arange(minBounds.x, maxBounds.x, 1.0)
-    ys = np.arange(minBounds.y, maxBounds.y, 1.0)
-    for x in xs:
-        for y in ys:
-            pose = Pose(Vector(float(x), float(y)), 0.0)
-            output = controller.update(pose)[0]
-            xRobot.append(pose.x)
-            yRobot.append(pose.y)
-            xHeading.append(output.x)
-            yHeading.append(output.y)
-    plt.quiver(xRobot, yRobot, xHeading, yHeading, color='c', scale_units='inches', scale=7)
-
-def plotCircle(pos, radius, c_color, minBounds, maxBounds):
+def plotCircle(pos, radius, c_color):
     theta = np.linspace(0, 2*pi, 100)
     cx = radius * np.cos(theta) + pos.x
     cy = radius * np.sin(theta) + pos.y
@@ -80,29 +78,32 @@ def plotCircle(pos, radius, c_color, minBounds, maxBounds):
     fit_c_y = []
     for i,x in enumerate(cx):
         y = cy[i]
-        in_x_bounds = minBounds.x < x < maxBounds.x
-        in_y_bounds = minBounds.y < y < maxBounds.y
-        if in_x_bounds and in_y_bounds:
-            fit_c_x.append(x)
-            fit_c_y.append(y)
+        # in_x_bounds = minBounds.x < x < maxBounds.x
+        # in_y_bounds = minBounds.y < y < maxBounds.y
+        # if in_x_bounds and in_y_bounds:
+        fit_c_x.append(x)
+        fit_c_y.append(y)
     plt.plot(fit_c_x, fit_c_y, color=c_color)
-            
-def main():
-    pose = Pose(Vector(0.0, 0.0), radians(90.0))
-    stack = Pose
-    path: Path = PathBuilder(pose, pose.heading).splineTo(Vector(24,24), radians(90.0)).build()
 
-    controller = gvf(path, kN = 1.0, kOmega = 1.0, kTheta = 50.0, kF = 4.0, kEnd = 0.4)
-    minBounds = Vector(-5, -5)
-    maxBounds = Vector(25, 25)
-    plt.style.use('dark_background')
-    plt.rcParams["figure.figsize"] = (10,8)
-    plotPath(path)
-    plotRobot(pose, controller, path)
-    # plotVectorField(controller, minBounds, maxBounds)
-    # plotCircle(path.end().vec, controller.kF, 'y', minBounds, maxBounds)
-    # plotCircle(path.end().vec, controller.kEnd, 'w', minBounds, maxBounds)
-    plt.show()
+def plotKnots(path: Path):
+    plotCircle(path.segments[0].start().vec, 1, 'w')
+    for segment in path.segments:
+        plotCircle(segment.end().vec, 1, 'w')
 
-if __name__ == '__main__':
-    main()
+def path_generator(start: Pose, *poses) -> Path:
+    builder = PathBuilder(start, start.heading)
+    for pose in poses:
+        vec = pose.vec
+        angle = pose.heading
+        builder = builder.splineTo(vec, angle)
+    return builder.build()
+
+
+
+
+
+
+
+
+
+

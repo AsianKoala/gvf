@@ -42,11 +42,7 @@ class koawalib_gvf:
     def headingControl(self):
         desiredHeading = self.lastGVFVec.angle()
         headingError = angleNorm(desiredHeading - self.lastPose.heading)
-        result = self.kOmega * headingError
-        # print('heading error:', headingError)
-        # print('turning output:', result)
-        # return result, headingError
-        return 0, headingError
+        return self.kOmega * degrees(headingError), headingError
 
     def vectorControl(self):
         projectedDisplacement = abs(self.lastS - self.path.length())
